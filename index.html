@@ -2,49 +2,71 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>기상청 날씨 달력 빌더</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>날씨 달력 빌더 & 실시간 체험판</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
     <style>
-        body { background: #f4f7f9; padding: 50px 0; font-family: 'Pretendard', sans-serif; }
-        .builder-card { background: white; border-radius: 20px; padding: 40px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
-        .code-display { background: #1e1e1e; color: #9cdcfe; padding: 20px; border-radius: 12px; font-family: 'Consolas', monospace; position: relative; }
-        .copy-btn { position: absolute; right: 15px; top: 15px; }
+        body { background-color: #f8f9fa; font-family: 'Pretendard', sans-serif; }
+        .builder-card { background: white; border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .code-area { background: #212529; color: #00ff41; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 0.85rem; }
+        .preview-scroll { max-height: 400px; overflow-y: auto; background: #fff; border: 1px solid #dee2e6; border-radius: 10px; padding: 15px; }
+        .weather-header { border-left: 5px solid #0d6efd; padding-left: 15px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-7 builder-card">
-            <h2 class="fw-bold text-center mb-4">📍 내 지역 날씨 코드 생성기</h2>
-            <p class="text-center text-muted mb-5">주소를 검색하면 전국 어디든 격자 좌표(NX, NY)를 자동으로 계산합니다.</p>
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="fw-bold">🌤️ 날씨 달력 빌더 & 체험판</h1>
+        <p class="text-muted">주소를 검색하고 실제 예보 데이터를 확인하여 코드를 생성하세요.</p>
+    </div>
 
-            <div class="mb-5 text-center">
-                <button class="btn btn-primary btn-lg px-5 shadow-sm" onclick="execDaumPostcode()">🏠 주소 검색하기</button>
-            </div>
-
-            <div id="resultSection" class="d-none">
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="builder-card p-4 h-100">
+                <h5 class="fw-bold mb-4">1. 지역 및 인증 설정</h5>
+                
                 <div class="mb-3">
-                    <label class="form-label fw-bold small text-primary">선택된 주소</label>
-                    <input type="text" id="address" class="form-control form-control-lg bg-light" readonly>
+                    <label class="form-label small fw-bold">기상청 API 키 (Decoding)</label>
+                    <input type="password" id="apiKey" class="form-control" placeholder="인증키를 입력하세요">
                 </div>
 
-                <div class="row g-3 mb-4">
+                <div class="mb-4">
+                    <label class="form-label small fw-bold">지역 검색</label>
+                    <button class="btn btn-outline-primary w-100" onclick="searchAddr()">🏠 주소 찾기</button>
+                    <input type="text" id="displayAddr" class="form-control mt-2 bg-light" readonly placeholder="선택된 주소">
+                </div>
+
+                <div class="row g-2 mb-4">
                     <div class="col-6">
-                        <label class="form-label small fw-bold">기상청 NX</label>
-                        <input type="text" id="nx" class="form-control" readonly>
+                        <label class="form-label small">NX</label>
+                        <input type="text" id="nx" class="form-control" value="60" readonly>
                     </div>
                     <div class="col-6">
-                        <label class="form-label small fw-bold">기상청 NY</label>
-                        <input type="text" id="ny" class="form-control" readonly>
+                        <label class="form-label small">NY</label>
+                        <input type="text" id="ny" class="form-control" value="127" readonly>
                     </div>
                 </div>
 
-                <label class="form-label fw-bold small text-success">Python 파일에 붙여넣을 코드</label>
-                <div class="code-display">
-                    <pre id="pythonCode" class="mb-0"></pre>
-                    <button class="btn btn-outline-light btn-sm copy-btn" onclick="copyCode()">복사</button>
+                <h6 class="fw-bold mb-2">💻 복사할 Python 설정값</h6>
+                <div class="code-area" id="codeOut">주소를 검색해 주세요.</div>
+                <button class="btn btn-dark w-100 mt-2" onclick="copyCode()">코드 복사하기</button>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="builder-card p-4 h-100">
+                <h5 class="fw-bold mb-4">2. 실시간 달력 미리보기</h5>
+                <button class="btn btn-primary w-100 mb-4" onclick="fetchPreview()">실제 데이터 불러오기</button>
+                
+                <div id="loading" class="text-center d-none py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">기상청 서버와 통신 중...</p>
+                </div>
+
+                <div id="previewArea" class="preview-scroll">
+                    <p class="text-center text-muted pt-5">키 입력과 주소 검색 후 버튼을 눌러주세요.</p>
                 </div>
             </div>
         </div>
@@ -52,11 +74,10 @@
 </div>
 
 <script>
-    // --- [기상청 격자 변환 수학 공식] ---
-    function convertToGrid(lat, lng) {
+    // NX, NY 변환 함수 (수학 공식)
+    function getGrid(lat, lng) {
         const RE = 6371.00877, GRID = 5.0, SLAT1 = 30.0, SLAT2 = 60.0, OLON = 126.0, OLAT = 38.0, XO = 43, YO = 136;
-        const DEGRAD = Math.PI / 180.0;
-        const re = RE / GRID, slat1 = SLAT1 * DEGRAD, slat2 = SLAT2 * DEGRAD, olon = OLON * DEGRAD, olat = OLAT * DEGRAD;
+        const DEGRAD = Math.PI / 180.0, re = RE / GRID, slat1 = SLAT1 * DEGRAD, slat2 = SLAT2 * DEGRAD, olon = OLON * DEGRAD, olat = OLAT * DEGRAD;
         let sn = Math.tan(Math.PI * 0.25 + slat2 * 0.5) / Math.tan(Math.PI * 0.25 + slat1 * 0.5);
         sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(sn);
         let sf = Math.tan(Math.PI * 0.25 + slat1 * 0.5);
@@ -72,36 +93,69 @@
         return { x: Math.floor(ra * Math.sin(theta) + XO + 0.5), y: Math.floor(ro - ra * Math.cos(theta) + YO + 0.5) };
     }
 
-    function execDaumPostcode() {
+    function searchAddr() {
         new daum.Postcode({
             oncomplete: function(data) {
-                // 주소 정보
-                const addr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
-                document.getElementById('address').value = addr;
-
-                // [핵심] 주소 기반 좌표 추출 (카카오 우편번호 서비스는 위경도를 기본 제공하지 않으므로 
-                // 행정구역 대표 좌표 매칭 또는 별도 API 연동이 필요하지만, 
-                // 시/도 정보를 기반으로 REG_ID를 자동 매칭해줍니다.)
+                const addr = data.address;
+                document.getElementById('displayAddr').value = addr;
                 
-                // 예시 좌표 (서울 중랑구 기준 - 실제로는 주소 API의 위경도와 연동)
-                // 만약 완전 자동화를 원하시면 '카카오 맵 API' 키를 발급받아 Geocoder를 써야 합니다.
-                // 여기서는 우선 구조를 보여드리기 위해 기본 NX, NY를 출력합니다.
+                // 임시: 정밀 좌표를 위해 시도별 대표 좌표 사용 (실제 위경도는 카카오맵 API 연동 필요)
+                // 여기서는 서울 중랑구 기준 샘플입니다.
                 const nx = 60, ny = 127; 
-                
                 document.getElementById('nx').value = nx;
                 document.getElementById('ny').value = ny;
-                document.getElementById('resultSection').classList.remove('d-none');
 
-                const finalCode = `NX, NY = ${nx}, ${ny}\nLOCATION_NAME = "${addr}"\nREG_ID_TEMP = '11B10101'\nREG_ID_LAND = '11B00000'`;
-                document.getElementById('pythonCode').innerText = finalCode;
+                document.getElementById('codeOut').innerText = `NX, NY = ${nx}, ${ny}\nLOCATION_NAME = "${addr}"\nREG_ID_TEMP = '11B10101'\nREG_ID_LAND = '11B00000'`;
             }
         }).open();
     }
 
+    async function fetchPreview() {
+        const key = document.getElementById('apiKey').value;
+        const nx = document.getElementById('nx').value;
+        const ny = document.getElementById('ny').value;
+        const loc = document.getElementById('displayAddr').value;
+
+        if(!key || !loc) { alert("API 키와 주소를 확인해주세요."); return; }
+
+        const area = document.getElementById('previewArea');
+        const loader = document.getElementById('loading');
+        loader.classList.remove('d-none');
+        area.classList.add('d-none');
+
+        const baseDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
+        const url = `https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0/getVilageFcst?dataType=JSON&base_date=${baseDate}&base_time=0500&nx=${nx}&ny=${ny}&numOfRows=200&authKey=${key}`;
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            const items = data.response.body.items.item;
+            const today = items.filter(i => i.fcstDate === baseDate);
+
+            let html = `<div class="weather-header"><h4 class="fw-bold">📍 ${loc}</h4><p class="text-muted small">오늘의 실시간 예보 리스트</p></div>`;
+            
+            const hourly = {};
+            today.forEach(i => {
+                if(!hourly[i.fcstTime]) hourly[i.fcstTime] = {};
+                hourly[i.fcstTime][i.category] = i.fcstValue;
+            });
+
+            Object.keys(hourly).sort().forEach(t => {
+                const h = hourly[t];
+                html += `<div class="py-2 border-bottom">[${parseInt(t.slice(0,2))}시] 🌡️ ${h.TMP}°C (☔${h.POP}% 💧${h.REH}% 💨${h.WSD}m/s)</div>`;
+            });
+            area.innerHTML = html;
+        } catch (e) {
+            area.innerHTML = `<div class="alert alert-danger">불러오기 실패: 키가 올바른지, 혹은 브라우저에서 CORS 차단이 되었는지 확인하세요.</div>`;
+        } finally {
+            loader.classList.add('d-none');
+            area.classList.remove('d-none');
+        }
+    }
+
     function copyCode() {
-        const text = document.getElementById('pythonCode').innerText;
-        navigator.clipboard.writeText(text);
-        alert("코드가 복사되었습니다!");
+        navigator.clipboard.writeText(document.getElementById('codeOut').innerText);
+        alert("복사 완료!");
     }
 </script>
 </body>
