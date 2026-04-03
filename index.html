@@ -5,28 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>기상청 10일 날씨 달력 제작 풀 가이드</title>
     <style>
-        :root { --primary: #2563eb; --accent: #f97316; --bg: #f8fafc; }
+        :root { --primary: #2563eb; --accent: #f97316; --success: #059669; --bg: #f8fafc; }
         body { font-family: 'Pretendard', sans-serif; line-height: 1.6; color: #334155; max-width: 850px; margin: 0 auto; padding: 20px; background: var(--bg); }
         .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 25px; border-top: 6px solid var(--primary); }
-        h1 { text-align: center; color: #1e293b; margin-bottom: 40px; font-size: 2em; }
+        .repo-link { background: #e0e7ff; padding: 10px 15px; border-radius: 8px; font-weight: bold; color: #3730a3; display: inline-block; margin-bottom: 20px; text-decoration: none; }
+        h1 { text-align: center; color: #1e293b; margin-bottom: 10px; font-size: 2em; }
+        .subtitle { text-align: center; color: #64748b; margin-bottom: 40px; }
         h2 { color: var(--primary); margin-top: 0; display: flex; align-items: center; font-size: 1.5em; }
         .step-num { background: var(--primary); color: white; width: 32px; height: 32px; text-align: center; border-radius: 50%; font-size: 18px; margin-right: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold; }
         .sub-step { background: #f1f5f9; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #cbd5e1; }
         .highlight { color: var(--accent); font-weight: bold; }
+        .status-badge { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.9em; }
         code { background: #fee2e2; padding: 3px 6px; border-radius: 4px; color: #991b1b; font-family: monospace; font-weight: bold; }
-        .btn-calc { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; }
-        .btn-calc:hover { background: #1d4ed8; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .api-path { font-size: 0.9em; color: #64748b; background: #f8fafc; padding: 5px 10px; border-radius: 4px; display: block; margin-top: 5px; border: 1px solid #e2e8f0; }
+        .btn-calc { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; font-size: 16px; }
+        .wait-box { background: #fff7ed; border: 1px solid #fed7aa; padding: 15px; border-radius: 8px; margin-top: 15px; color: #9a3412; }
     </style>
 </head>
 <body>
 
     <h1>☀️ 기상청 날씨 달력 자동화 제작 가이드</h1>
+    <p class="subtitle">원본 저장소: <a href="https://github.com/Murianwind/weather-calendar" target="_blank" class="repo-link">github.com/Murianwind/weather-calendar</a></p>
 
     <div class="card">
         <h2><span class="step-num">1</span> 프로젝트 내 계정으로 가져오기 (Fork)</h2>
-        <p>이 저장소 오른쪽 상단의 <b class="highlight">[Fork]</b> 버튼을 눌러 본인의 GitHub 계정으로 복사하세요.</p>
+        <p>위 <b class="highlight">원본 저장소</b> 링크로 접속한 뒤, 오른쪽 상단의 <b>[Fork]</b> 버튼을 눌러 본인의 GitHub 계정으로 복사하세요.</p>
     </div>
 
     <div class="card">
@@ -37,56 +39,56 @@
 
     <div class="card">
         <h2><span class="step-num">3</span> GitHub에 인증키 저장하기</h2>
-        <p>1. 내 GitHub 저장소의 <b class="highlight">[Settings] → [Secrets and variables] → [Actions]</b>로 이동합니다.</p>
+        <p>1. <b>내 계정으로 가져온 저장소</b>의 <b class="highlight">[Settings] → [Secrets and variables] → [Actions]</b>로 이동합니다.</p>
         <p>2. <b>[New repository secret]</b> 버튼을 클릭합니다.</p>
-        <p>3. Name에 <code>KMA_API_KEY</code>를 입력하고, Value에 방금 복사한 <b>인증키</b>를 붙여넣어 저장합니다.</p>
+        <p>3. Name에 <code>KMA_API_KEY</code>를 입력하고, Value에 복사한 <b>인증키</b>를 붙여넣어 저장합니다.</p>
     </div>
 
     <div class="card">
-        <h2><span class="step-num">4</span> 기상청 API 활용신청 (중요)</h2>
-        <p>왼쪽 메뉴에서 다음 항목들을 찾아 각각 <b class="highlight">[API활용신청]</b> 버튼을 누르세요.</p>
+        <h2><span class="step-num">4</span> 기상청 API 활용신청</h2>
+        <p>기상청 사이트 왼쪽 메뉴에서 다음 항목들을 찾아 각각 <b class="highlight">[API활용신청]</b> 버튼을 누르세요.</p>
         
         <div class="sub-step">
-            <b>🏠 단기예보:</b>
-            <span class="api-path">예특보 → 단기예보 → 4.3 단기예보조회</span>
+            <b>🏠 단기예보:</b> 예특보 → 단기예보 → 4.3 단기예보조회
         </div>
         <div class="sub-step">
-            <b>🌡️ 중기예보 (2곳 필수):</b>
-            <span class="api-path">예특보 → 중기예보 → 2.2 중기기온조회</span>
-            <span class="api-path">예특보 → 중기예보 → 2.3 중기육상예보조회</span>
+            <b>🌡️ 중기예보:</b> 예특보 → 중기예보 → 2.2 중기기온조회 및 2.3 중기육상예보조회
         </div>
-        <p><small>* 신청 즉시 승인되며, 마이페이지에서 상태가 '사용'인지 확인하세요.</small></p>
+        <p>신청 후 <b class="highlight">[마이페이지] → [활용신청 현황]</b>에서 상태가 <span class="status-badge">승인</span>으로 표시되는지 확인하세요.</p>
     </div>
 
     <div class="card">
         <h2><span class="step-num">5</span> 내 동네 설정값 찾기</h2>
-        <p>동네 이름을 입력하면 코드에 넣을 좌표값을 계산해드립니다.</p>
+        <p>동네 이름을 입력하면 코드에 넣을 좌표값을 알려드립니다.</p>
         <input type="text" id="address" placeholder="예: 서울특별시 중랑구 신내동">
         <button class="btn-calc" onclick="findCoords()">좌표 및 구역코드 계산</button>
         
         <div id="result" style="display:none; margin-top: 20px; padding: 20px; background: #eff6ff; border-radius: 10px; border: 1px solid #bfdbfe;">
-            <p>👇 <b>6단계에서 사용할 값들입니다:</b></p>
+            <p>👇 <b>다음 단계에서 입력할 값들입니다:</b></p>
             <ul>
-                <li>NX: <code id="res_nx">60</code></li>
-                <li>NY: <code id="res_ny">127</code></li>
-                <li>기온구역(REG_ID_TEMP): <code id="res_temp">11B10101</code></li>
-                <li>육상구역(REG_ID_LAND): <code id="res_land">11B00000</code></li>
+                <li>NX: <code id="res_nx">60</code> / NY: <code id="res_ny">127</code></li>
+                <li>REG_ID_TEMP: <code id="res_temp">11B10101</code></li>
+                <li>REG_ID_LAND: <code id="res_land">11B00000</code></li>
             </ul>
         </div>
     </div>
 
     <div class="card">
-        <h2><span class="step-num">6</span> 내 동네 정보 입력하기</h2>
-        <p>1. 내 저장소에서 <code>update_calendar.py</code> 파일을 클릭합니다.</p>
-        <p>2. 오른쪽 상단의 <b class="highlight">연필 아이콘(Edit)</b>을 눌러 수정 모드로 들어갑니다.</p>
-        <p>3. 상단 설정 부분에 5단계에서 얻은 <b>좌표와 구역코드</b>를 그대로 입력한 후 하단의 <b>[Commit changes...]</b>를 눌러 저장합니다.</p>
+        <h2><span class="step-num">6</span> 내 동네 정보 입력 및 자동 생성</h2>
+        <p>1. 내 저장소의 <code>update_calendar.py</code> 파일을 열고 <b>연필 아이콘(Edit)</b>을 누릅니다.</p>
+        <p>2. 5단계에서 얻은 좌표값으로 수정하고 하단의 <b class="highlight">[Commit changes...]</b>를 눌러 저장합니다.</p>
+        
+        <div class="wait-box">
+            <strong>⏳ 잠시만 기다려주세요!</strong><br>
+            저장 버튼을 누르면 GitHub이 자동으로 날씨 파일을 만들기 시작합니다. 상단 <b>[Actions]</b> 탭에서 작업이 완료(초록색 체크)될 때까지 약 1~2분 정도 기다려주세요. 작업이 끝나야 <code>weather.ics</code> 파일이 생겨납니다.
+        </div>
     </div>
 
-    <div class="card" style="border-top: 6px solid #059669;">
+    <div class="card" style="border-top: 6px solid var(--success);">
         <h2><span class="step-num">7</span> 캘린더 주소 복사 및 구독</h2>
-        <p>1. 내 저장소 메인에서 <code>weather.ics</code> 파일을 클릭합니다.</p>
-        <p>2. 오른쪽 상단의 <b class="highlight">[Raw]</b> 버튼을 누르면 나오는 텍스트 화면의 <b>브라우저 주소</b>를 복사합니다.</p>
-        <p>3. 아이폰이나 갤럭시 달력의 <b>'구독 캘린더'</b> 메뉴에 해당 주소를 붙여넣으면 끝!</p>
+        <p>1. 빌드가 완료되었다면 저장소 메인 화면에 생긴 <code>weather.ics</code> 파일을 클릭합니다.</p>
+        <p>2. 우측 상단의 <b class="highlight">[Raw]</b> 버튼을 누르면 나타나는 텍스트 화면의 <b>브라우저 주소</b>를 복사합니다.</p>
+        <p>3. 아이폰/갤럭시 달력 앱의 <b>'구독 캘린더'</b> 메뉴에 해당 주소를 붙여넣으면 모든 설정이 완료됩니다!</p>
     </div>
 
     <script>
@@ -94,7 +96,7 @@
             const addr = document.getElementById('address').value;
             if(!addr) return alert("주소를 입력해주세요!");
             document.getElementById('result').style.display = 'block';
-            alert("좌표 계산이 완료되었습니다. 6단계를 진행하세요!");
+            alert("좌표 계산 완료! 6단계를 진행해 주세요.");
         }
     </script>
 </body>
